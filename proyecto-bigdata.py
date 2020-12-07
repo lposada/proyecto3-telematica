@@ -1,3 +1,4 @@
+
 from pyspark.sql import SparkSession
 
 from datetime import date
@@ -13,7 +14,7 @@ day = today.strftime("%d-%m-%Y")
 
 datos = spark.read.csv('s3://proyecto-bigdata/raw/datos-{0}.csv'.format(day), inferSchema=True, header=True)
 
-datos_limpios = datos.drop('ciudad_municipio','departamento','unidad_medida','pais_viajo_1_cod','per_etn_','nom_grupo_')
+datos_limpios = datos.drop('Código DIVIPOLA municipio','Código DIVIPOLA departamento','Unidad de medida de edad','Código ISO del país','Pertenencia étnica','Nombre del grupo étnico')
 
 def edad_etapa(edad):
     etapa = ''
@@ -36,9 +37,9 @@ etapa_udf = spark.udf.register('Etapas', edad_etapa)
 
 datos_limpios = datos_limpios.withColumn('Etapa', etapa_udf(datos['Edad']))
 
-datos_limpios = datos_limpios.fillna('COLOMBIA', subset=['pais_viajo_1_nom'])
+datos_limpios = datos_limpios.fillna('COLOMBIA', subset=['Nombre del país'])
 
-datos_limpios.select('pais_viajo_1_nom').show()
+datos_limpios.select('Nombre del país').show()
 
 today = date.today()
 
@@ -48,11 +49,11 @@ url = 's3://proyecto-bigdata/curated/{0}'.format(d4)
 
 datos_limpios.coalesce(1).write.format('csv').option('header','True').save(url)
 
-paises = datos_limpios.groupBy('pais_viajo_1_nom').count().orderBy('count', ascending=False)
+paises = datos_limpios.groupBy('Nombre del país').count().orderBy('count', ascending=False)
 
-paises = paises.withColumnRenamed("pais_viajo_1_nom","pais_donde_viajo")
+paises = paises.withColumnRenamed("Nombre del país","pais_donde_viajo")
 
-recuperados_y_fallecidos_departamento = datos_limpios.groupBy('departamento_nom','recuperado').count().orderBy('count', ascending=False)
+recuperados_y_fallecidos_departamento = datos_limpios.groupBy('Nombre departamento','recuperado').count().orderBy('count', ascending=False)
 
 recuperados_y_fallecidos_etapa = datos_limpios.groupBy('Etapa','recuperado').count().orderBy('count', ascending=False)
 
@@ -60,7 +61,7 @@ sexo = datos_limpios.groupBy('sexo').count().orderBy('count', ascending=False)
 
 sexo_recuperado = datos_limpios.groupBy('sexo','recuperado').count().orderBy('count', ascending=False)
 
-recuperados_muertos_medellin = datos_limpios.filter(datos_limpios.ciudad_municipio_nom == 'MEDELLIN').groupBy('ciudad_municipio_nom', 'recuperado').count().orderBy('count', ascending=False)
+recuperados_muertos_medellin = datos_limpios.filter(datos_limpios['Nombre municipio'] == 'MEDELLIN').groupBy('Nombre municipio', 'recuperado').count().orderBy('count', ascending=False)
 
 today = date.today()
 
